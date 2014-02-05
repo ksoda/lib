@@ -4,7 +4,7 @@ require 'set'
 
 class Graph
   #MAX_VERTICES = 100
-  Vertex = Struct.new(:adjacency_cl, :color, :pred, :discovered, :finished)
+  Vertex = Struct.new(:adjacency_cl, :color, :pred, :discovered, :finished, :dist)
   attr_reader :vertices
 
   def initialize(graph, digraph = nil)
@@ -62,6 +62,32 @@ class Graph
     else
       print_path(s, vertices[v].pred)
       print ' ', v
+    end
+  end
+  def breadth_first_search(s)
+    @vertices.each do |v|
+      v.pred = nil
+      v.dist = Float::MAX
+      v.color = :White
+    end
+    @vertices[s].color = :Gray
+    queue = []
+    queue << s
+
+    until queue.empty?
+      u_id = queue.first
+      u = @vertices[u_id]
+      u.adjacency_cl.each do |v_id|
+        v = @vertices[v_id]
+        if v.color == :White
+          v.dist = u.dist + 1
+          v.pred = u_id
+          v.color = :Gray
+          queue << v_id
+        end
+      end
+      queue.shift
+      u.color = :Black
     end
   end
 end

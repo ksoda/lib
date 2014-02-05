@@ -20,7 +20,11 @@ es = [ [0, 1], [0, 4], [1, 2],
 g.depth_first_search(0)
 print 'path: '
 g.print_path(0, 15)
+puts
 
+g.breadth_first_search(0)
+print 'path: '
+g.print_path(0, 15)
 __END__
 0 1 6 8
 1 2 3
