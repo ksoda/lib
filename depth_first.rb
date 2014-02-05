@@ -1,6 +1,5 @@
 #!/usr/bin/env ruby
 # encoding: UTF-8
-require 'pp'
 require './graph.rb'
 
 es = []
@@ -9,19 +8,17 @@ DATA.readlines.each do |ln|
   v = ns.shift
   ns.each{|it| es << [v, it]}
 end
+g = Graph.new(es)
+print g
+puts
 =begin
 es = [ [0, 1], [0, 4], [1, 2],
        [2, 3], [2, 6], [3, 4],
        [4, 5], [7, 8] ]
 =end
 
-g = Graph.new(es)
-
-p g
 g.depth_first_search(0)
-g.vertices.each do |k, v|
-  puts "#{k}: #{v.pred}"
-end
+print 'path: '
 g.print_path(0, 15)
 
 __END__
