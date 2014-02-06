@@ -3,6 +3,7 @@
 
 maze = DATA.readlines.map { |line| line.chomp.split(//) }
 nodes = {}
+=begin
 maze.each.with_index do |line, y|
   line.each.with_index do |data, x|
     next if data == '*'
@@ -20,6 +21,7 @@ maze.each.with_index do |line, y|
   end
 end
 g = Graph.new(nodes)
+=end
 __END__
 ***************************
 *S* *                    *
