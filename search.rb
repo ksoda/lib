@@ -8,15 +8,12 @@ DATA.readlines.each do |ln|
   v = ns.shift
   ns.each{|it| es << [v, it]}
 end
+=begin
+es = [ [0, 4], [2, 3], [2, 6], [3, 4], [4, 5], [7, 8] ]
+=end
 g = Graph.new(es)
 print g
 puts
-=begin
-es = [ [0, 1], [0, 4], [1, 2],
-       [2, 3], [2, 6], [3, 4],
-       [4, 5], [7, 8] ]
-=end
-
 g.depth_first_search(0)
 print 'path: '
 g.print_path(0, 15)
@@ -25,6 +22,8 @@ puts
 g.breadth_first_search(0)
 print 'path: '
 g.print_path(0, 15)
+=begin
+=end
 __END__
 0 1 6 8
 1 2 3

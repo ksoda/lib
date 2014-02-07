@@ -8,13 +8,11 @@ class Graph
   attr_reader :vertices
 
   def initialize(graph, digraph = nil)
-    @vertices = Array.new
+    @vertices = Hash.new{|h, k| h[k] = Vertex.new([]) }
 
     graph.each do |(u, v)|
-      @vertices[u] = Vertex.new([]) if @vertices[u].nil?
       @vertices[u].adjacency_cl << v
       unless digraph
-        @vertices[v] = Vertex.new([]) if @vertices[v].nil?
         @vertices[v].adjacency_cl << u
       end
     end
@@ -22,20 +20,20 @@ class Graph
 
   def to_s
     str = ''
-    @vertices.each_with_index do |v, k|
+    @vertices.each_pair do |k, v|
       str += "#{k}->#{v.adjacency_cl} "
     end
     str.chop
   end
   def depth_first_search(s)
-    @vertices.each do |v|
+    @vertices.each_value do |v|
       v.discovered = v.finished = v.pred = nil
       v.color = :White
     end
     @time = 0
     dfs_visit(s)
 
-    vertices.each_with_index do |v, v_id|
+    vertices.each_pair do |v_id, v|
       dfs_visit(v_id) if v.color == :White
     end
   end
@@ -57,7 +55,7 @@ class Graph
   def print_path(s, v)
     if v == s
       print s
-    elsif vertices[v].pred == nil
+    elsif vertices[v].pred.nil?
       print 'no-path'
     else
       print_path(s, vertices[v].pred)
@@ -65,7 +63,7 @@ class Graph
     end
   end
   def breadth_first_search(s)
-    @vertices.each do |v|
+    @vertices.each_value do |v|
       v.pred = nil
       v.dist = Float::MAX
       v.color = :White
