@@ -35,20 +35,20 @@ class Graph
     @time = 0
     dfs_visit(s)
 
-    vertices.each_with_index do |v, k|
-      dfs_visit(k) if v.color == :White
+    vertices.each_with_index do |v, v_id|
+      dfs_visit(v_id) if v.color == :White
     end
   end
-  def dfs_visit(key)
-    u = vertices[key]
+  def dfs_visit(u_id)
+    u = vertices[u_id]
     u.color = :Gray
     u.discovered = @time += 1
 
-    u.adjacency_cl.each do |k|
-      v = vertices[k]
+    u.adjacency_cl.each do |v_id|
+      v = vertices[v_id]
       if v.color == :White
-        v.pred = key
-        dfs_visit(k)
+        v.pred = u_id
+        dfs_visit(v_id)
       end
     end
     u.color = :Black
@@ -75,7 +75,7 @@ class Graph
     queue << s
 
     until queue.empty?
-      u_id = queue.first
+      u_id = queue.shift
       u = @vertices[u_id]
       u.adjacency_cl.each do |v_id|
         v = @vertices[v_id]
@@ -86,7 +86,6 @@ class Graph
           queue << v_id
         end
       end
-      queue.shift
       u.color = :Black
     end
   end
