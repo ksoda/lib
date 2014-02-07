@@ -2,8 +2,10 @@
 # encoding: UTF-8
 require 'set'
 
+class Fixnum
+  def to_sym; to_i; end
+end
 class Graph
-  #MAX_VERTICES = 100
   Vertex = Struct.new(:adjacency_cl, :color, :pred, :discovered, :finished, :dist)
   attr_reader :vertices
 
@@ -11,7 +13,9 @@ class Graph
     @vertices = Hash.new{|h, k| h[k] = Vertex.new([]) }
 
     graph.each do |(u, v)|
+      if v.nil? then @vertices[u]; next end
       @vertices[u].adjacency_cl << v
+      @vertices[v]
       unless digraph
         @vertices[v].adjacency_cl << u
       end
@@ -44,6 +48,7 @@ class Graph
 
     u.adjacency_cl.each do |v_id|
       v = vertices[v_id]
+      @acyclic = true if v.color == :Gray
       if v.color == :White
         v.pred = u_id
         dfs_visit(v_id)
@@ -51,6 +56,13 @@ class Graph
     end
     u.color = :Black
     u.finished = @time += 1
+  end
+
+  def tsort
+    depth_first_search(@vertices.keys.first)
+    return false if @acyclic
+    @vertices.map{|k, v| [k, v.finished]}.sort_by{|v, k|
+      -k}.map(&:first)
   end
   def print_path(s, v)
     if v == s
