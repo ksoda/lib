@@ -6,8 +6,9 @@ require 'pp'
 adjs = DATA.readlines.map{|ln| ln.split.map(&:to_sym) }
 g = Graph.new(adjs, true)
 puts g
-p g.tsort
+#p g.transpose
 =begin
+p g.tsort
 g.breadth_first_search(0)
 print 'path: '
 g.print_path(0, 15)

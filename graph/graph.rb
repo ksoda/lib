@@ -3,7 +3,7 @@
 require 'set'
 
 class Fixnum
-  def to_sym; to_i; end
+#  def to_sym; to_i; end
 end
 class Graph
   Vertex = Struct.new(:adjacency, :color, :pred, :discovered, :finished, :dist)
@@ -15,11 +15,33 @@ class Graph
     adjs.each do |adj|
       v = adj.shift
       @vertices[v].adjacency = adj
-
-      #add transpose g unless digraph
     end
+  end
+  def each_vertex
+    @vertices.keys.each {|v| yield v }
+  end
+  def each_edge
+    @vertices.each_pair do |u_id, u|
+      u.adjacency.each { |v| yield u_id, v }
+    end
+  end
 =begin
+  def transpose
+    return self unless directed?
+    g = self.class.new
+    each_vertex { |v| g.add_vertex v }
+    each_edge { |u,v| g.add_edge(v, u) }
+    g
+  end
 =end
+  def to_undirected
+  end
+  def add_edge(u, v)
+    @vertices[u].adjacency << v
+    add_vertex(v)
+  end
+  def add_vertex(v)
+    @vertices[v]
   end
 
   def to_s
@@ -41,7 +63,8 @@ class Graph
       dfs_visit(v_id) if v.color == :White
     end
   end
-  def dfs_visit(u_id)
+  def dfs_visit(u_id, before = nil, after = nil)
+    before && before[]
     u = vertices[u_id]
     u.color = :Gray
     u.discovered = @time += 1
@@ -56,6 +79,7 @@ class Graph
     end
     u.color = :Black
     u.finished = @time += 1
+    after && after[]
   end
   def tsort
     depth_first_search(@vertices.keys.first)
@@ -100,4 +124,4 @@ class Graph
       u.color = :Black
     end
   end
-end
+end # class Graph
