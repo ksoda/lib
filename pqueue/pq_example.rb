@@ -1,3 +1,4 @@
+# model
 class PQueue
   # equal: 0, 1st > 2nd: 1, otherwise: -1
   def initialize(&blck)
