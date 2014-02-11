@@ -176,7 +176,9 @@ class Graph
     end
   end
 
+  # Incomplete
   def bipartite
+    # unless odd cycle exist
     breadth_first_search
     vertices_dict.partition{|v, v_it| v_it.dist.even?}.
       map{|bl| bl.map(&:first)}
