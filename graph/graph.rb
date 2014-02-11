@@ -29,13 +29,13 @@ class Graph
   end
 
   class VertexItem
-    def inspect() "<#{color}:#{pred}:#{discovered}/#{finished}>"; end
+    def inspect() "<#{color}:#{pred}:#{discovered}/#{finished}:#{dist}>"; end
   end
 
   def to_s
     str = ''
     each_vertex do |v|
-      str += "#{v}->#{@adjacencies[v]} "
+      str += "#{v}->#{adjacencies[v]} "
     end
     str.chop
   end
@@ -43,30 +43,30 @@ class Graph
   def print_path(s, v)
     if v == s
       print s
-    elsif @vertices_dict[v].pred.nil?
+    elsif vertices_dict[v].pred.nil?
       print 'no-path'
     else
-      print_path(s, @vertices_dict[v].pred)
+      print_path(s, vertices_dict[v].pred)
       print ' ', v
     end
   end
 
 
   def each_vertex
-    @adjacencies.each_key {|v| yield v }
+    adjacencies.each_key {|v| yield v }
   end
 
   def each_edge
-    @adjacencies.each_pair do |u, adj|
+    adjacencies.each_pair do |u, adj|
       adj.each { |v| yield u, v }
     end
   end
 
-  def add_vertex(v) @adjacencies[v]; end
+  def add_vertex(v) adjacencies[v]; end
 
   def add_edge(u, v)
     add_vertex(v)
-    @adjacencies[u] << v
+    adjacencies[u] << v
   end
 
   def transpose
@@ -83,27 +83,27 @@ class Graph
   end
 
   def to_undirected!
-    @adjacencies.replace to_undirected.adjacencies
+    adjacencies.replace to_undirected.adjacencies
     self
   end
 
 
   def depth_first_search(vtx_ord = nil, after = nil)
     each_vertex do |v|
-      v_it = @vertices_dict[v]
+      v_it = vertices_dict[v]
       v_it.discovered = v_it.finished = v_it.pred = nil
       v_it.color = :White
     end
     @time = 0
-    vtx_ord ||= @adjacencies.keys
+    vtx_ord ||= adjacencies.keys
     dfs_visit(vtx_ord.shift, after)
     vtx_ord.each do |v|
-      dfs_visit(v, after) if @vertices_dict[v].color == :White
+      dfs_visit(v, after) if vertices_dict[v].color == :White
     end
 
     if DEBUG
       each_vertex do|v|
-        p [v, @vertices_dict[v]]
+        p [v, vertices_dict[v]]
       end
     end
   end
@@ -111,13 +111,13 @@ class Graph
   private
   def dfs_visit(u, after = nil)
 
-    u_it = @vertices_dict[u]
+    u_it = vertices_dict[u]
     u_it.color = :Gray
     u_it.discovered = @time += 1
 
-    @adjacencies[u].each do |v|
-      v_it = @vertices_dict[v]
-      @acyclic = true if v_it.color == :Gray
+    adjacencies[u].each do |v|
+      v_it = vertices_dict[v]
+      @cyclic = true if v_it.color == :Gray
       if v_it.color == :White
         v_it.pred = u
         dfs_visit(v, after)
@@ -131,10 +131,11 @@ class Graph
 
   public
   def top_sort(scc = nil)
+    @cyclic = false
     #after = proc{|v| puts "#{v} finished"}
     depth_first_search
-    return false if @acyclic and scc.nil?
-    @vertices_dict.map{|v, v_it| [v, v_it.finished]}.sort_by{|v_it, v|
+    return false if @cyclic and scc.nil?
+    vertices_dict.map{|v, v_it| [v, v_it.finished]}.sort_by{|v_it, v|
       -v}.map(&:first) # 黒になったときlistの頭に加えたほうがよい
   end
 
@@ -146,22 +147,24 @@ class Graph
   end
 
 
-  def breadth_first_search(s)
+  def breadth_first_search(s = adjacencies.keys.first)
     each_vertex do |v|
-      v_it = @vertices_dict[v]
+      v_it = vertices_dict[v]
       v_it.pred = nil
-      v_it.dist = Float::MAX
+      v_it.dist = Float::INFINITY
       v_it.color = :White
     end
-    @vertices_dict[s].color = :Gray
+    s_it = vertices_dict[s]
+    s_it.color = :Gray
+    s_it.dist = 0
     queue = []
     queue << s
 
     until queue.empty?
       u = queue.shift
-      u_it = @vertices_dict[u]
-      @adjacencies[u].each do |v|
-        v_it = @vertices_dict[v]
+      u_it = vertices_dict[u]
+      adjacencies[u].each do |v|
+        v_it = vertices_dict[v]
         if v_it.color == :White
           v_it.dist = u_it.dist + 1
           v_it.pred = u
@@ -171,6 +174,12 @@ class Graph
       end
       u_it.color = :Black
     end
+  end
+
+  def bipartite
+    breadth_first_search
+    vertices_dict.partition{|v, v_it| v_it.dist.even?}.
+      map{|bl| bl.map(&:first)}
   end
 
 end # class Graph
