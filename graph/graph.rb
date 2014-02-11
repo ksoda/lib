@@ -2,13 +2,15 @@
 # encoding: UTF-8
 require 'set'
 #require 'matrix' # for adj matrix
+DEBUG = nil
 
 class Fixnum
-  def to_key; self; end
+  def to_key() self; end
 end
 class String
-  def to_key; to_sym; end
+  def to_key() to_sym; end
 end
+
 class Graph
   VertexItem = Struct.new(:color, :pred, :discovered, :finished, :dist)
   attr_reader :adjacencies, :vertices_dict
@@ -26,6 +28,30 @@ class Graph
     end
   end
 
+  class VertexItem
+    def inspect() "<#{color}:#{pred}:#{discovered}/#{finished}>"; end
+  end
+
+  def to_s
+    str = ''
+    each_vertex do |v|
+      str += "#{v}->#{@adjacencies[v]} "
+    end
+    str.chop
+  end
+
+  def print_path(s, v)
+    if v == s
+      print s
+    elsif @vertices_dict[v].pred.nil?
+      print 'no-path'
+    else
+      print_path(s, @vertices_dict[v].pred)
+      print ' ', v
+    end
+  end
+
+
   def each_vertex
     @adjacencies.each_key {|v| yield v }
   end
@@ -36,9 +62,7 @@ class Graph
     end
   end
 
-  def add_vertex(v)
-    @adjacencies[v]
-  end
+  def add_vertex(v) @adjacencies[v]; end
 
   def add_edge(u, v)
     add_vertex(v)
@@ -57,47 +81,35 @@ class Graph
       self_v | other_v }
     res
   end
+
   def to_undirected!
     @adjacencies.replace to_undirected.adjacencies
     self
   end
 
-  def to_s
-    str = ''
-    each_vertex do |v|
-      str += "#{v.to_key}->#{@adjacencies[v]} "
-    end
-    str.chop
-  end
 
-  def print_path(s, v)
-    if v == s
-      print s
-    elsif @vertices_dict[v].pred.nil?
-      print 'no-path'
-    else
-      print_path(s, @vertices_dict[v].pred)
-      print ' ', v
-    end
-  end
-
-  def depth_first_search(s)
+  def depth_first_search(vtx_ord = nil, after = nil)
     each_vertex do |v|
       v_it = @vertices_dict[v]
       v_it.discovered = v_it.finished = v_it.pred = nil
       v_it.color = :White
     end
     @time = 0
-    dfs_visit(s)
+    vtx_ord ||= @adjacencies.keys
+    dfs_visit(vtx_ord.shift, after)
+    vtx_ord.each do |v|
+      dfs_visit(v, after) if @vertices_dict[v].color == :White
+    end
 
-    each_vertex do |v|
-      dfs_visit(v) if @vertices_dict[v].color == :White
+    if DEBUG
+      each_vertex do|v|
+        p [v, @vertices_dict[v]]
+      end
     end
   end
 
   private
-  def dfs_visit(u, before = nil, after = nil)
-    before && before[]
+  def dfs_visit(u, after = nil)
 
     u_it = @vertices_dict[u]
     u_it.color = :Gray
@@ -108,21 +120,31 @@ class Graph
       @acyclic = true if v_it.color == :Gray
       if v_it.color == :White
         v_it.pred = u
-        dfs_visit(v)
+        dfs_visit(v, after)
       end
     end
     u_it.color = :Black
     u_it.finished = @time += 1
-    after && after[]
+
+    after && after[u]
   end
 
   public
-  def tsort(s = @adjacencies.keys.first)
-    depth_first_search(s)
-    return false if @acyclic
+  def top_sort(scc = nil)
+    #after = proc{|v| puts "#{v} finished"}
+    depth_first_search
+    return false if @acyclic and scc.nil?
     @vertices_dict.map{|v, v_it| [v, v_it.finished]}.sort_by{|v_it, v|
       -v}.map(&:first) # 黒になったときlistの頭に加えたほうがよい
   end
+
+  def s_connnected_component
+    v_ord = top_sort(true)
+    tg = transpose
+    tg.depth_first_search(v_ord)
+    tg.vertices_dict.select{|v, it| it.pred.nil?}.keys
+  end
+
 
   def breadth_first_search(s)
     each_vertex do |v|
@@ -150,4 +172,5 @@ class Graph
       u_it.color = :Black
     end
   end
+
 end # class Graph

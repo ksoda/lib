@@ -6,9 +6,9 @@ class PQueue
     elms.each {|e| push e } if elms
     build
   end
-  def heap_size; @queue.size - 1; end
-  def top; @queue[1]; end
-  def empty?; heap_size.zero?; end
+  def heap_size() @queue.size - 1; end
+  def top() @queue[1]; end
+  def empty?() heap_size.zero?; end
 
   private
   def build
