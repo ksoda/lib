@@ -1,6 +1,5 @@
 #!/usr/bin/env ruby
 # encoding: UTF-8
-require 'matrix' # for adj matrix
 DEBUG = nil
 
 class Fixnum
@@ -19,31 +18,20 @@ class Graph
 
   public
   def initialize(adjs = [], options = {})
-    default = { directed: true, klass: Array, adj_mtx_size: false}
+    default = { directed: true, klass: Array, adj_mtxoid: false}
     options = default.merge options
 
-    @adj_matrix_size = options[:adj_mtx_size]
+    @adj_matrix = options[:adj_mtxoid]
     @directed = options[:directed]
     @vertices_dict = Hash.new{|h, k| h[k] = VertexItem.new }
 
-    unless @adj_matrix_size
-      # adj-list
-      @adjacencies = Hash.new{|h, k| h[k] = options[:klass].new }
+    options[:klass] = Array if @adj_matrix
+    @adjacencies = Hash.new{|h, k| h[k] = options[:klass].new }
 
-      adjs.each do |adj|
-        u = adj.shift
-        adj.each {|v| add_edge(u, v)}
-      end
-    else
-      # adj-matrix, index: zero start
-      # must not be index gap
-      @adjacencies = Array.new(@adj_matrix_size + 1){ [] }
-      adjs.each_with_index do |adj, ix|
-        u = adj.shift
-        adj.each {|v| add_edge(u, v)}
-      end
+    adjs.each do |adj|
+      u = adj.shift
+      adj.each {|v| add_edge(u, v)}
     end
-
   end # initialize
 
   class VertexItem
@@ -52,14 +40,10 @@ class Graph
 
   def to_s
     str = ''
-    unless @adj_matrix_size
-      each_vertex {|v| str += "#{v}->#{adjacencies[v]} " }
-    else
-      each_vertex do |v|
-        adj = adjacencies[v].each_with_index.
-          select{|e,i| e && e.nonzero?}.map{|pair| pair[1]}
-        str += "#{v}->#{adj} "
-      end
+    each_vertex do |v|
+      adj = @adj_matrix ? flg_to_neighbours(adjacencies[v]):
+        adjacencies[v]
+      str += "#{v}->#{adj} "
     end
     str.chop
   end
@@ -76,30 +60,24 @@ class Graph
   end
 
   def each_vertex
-    unless @adj_matrix_size
       adjacencies.each_key {|v| yield v }
-    else
-      1.upto(@adj_matrix_size) {|v| yield v}
-    end
   end
 
+  def flg_to_neighbours(adj_row)
+    adj_row.each_with_index.select{|e,i| e==1}.map(&:last)
+  end
   def each_edge
-    unless @adj_matrix_size
-      adjacencies.each_pair do |u, adj|
-        adj.each { |v| yield u, v }
-      end
-    else
-      1.upto(@adj_matrix_size) do |u|
-        adjacencies[u].each {|v| yield u, v }
-      end
+    adjacencies.each_pair do |u, adj|
+      adj = flg_to_neighbours(adj) if @adj_matrix
+      adj.each { |v| yield u, v }
     end
   end
 
   def add_vertex(v) adjacencies[v]; end
 
   def add_edge(u, v)
-    unless @adj_matrix_size
-      add_vertex(v)
+    add_vertex(v)
+    unless @adj_matrix
       adjacencies[u] << v
       adjacencies[v] << u unless @directed
     else
@@ -108,7 +86,7 @@ class Graph
     end
   end
   def delete_edge(u, v)
-    unless @adj_matrix_size
+    unless @adj_matrix
       adjacencies[u].delete(v)
       adjacencies[v].delete(u) unless @directed
     else
@@ -131,35 +109,27 @@ class Graph
     res
   end
 
-  def to_undirected!
-    adjacencies.replace to_undirected.adjacencies
-    self.directed = false
-    self
-  end
-
-
-  def depth_first_search(vtx_ord = nil, after = nil)
+  def depth_first_search(vtx_ord = nil, t_value = nil, after = nil)
     each_vertex do |v|
       v_it = vertices_dict[v]
       v_it.discovered = v_it.finished = v_it.pred = nil
       v_it.color = :White
     end
     @time = 0
+
     vtx_ord ||= adjacencies.keys
     dfs_visit(vtx_ord.shift, after)
+    unless t_value
     vtx_ord.each do |v|
-      dfs_visit(v, after) if vertices_dict[v].color == :White
+      dfs_visit(v, t_value, after) if vertices_dict[v].color == :White
+    end
     end
 
-    if DEBUG
-      each_vertex do|v|
-        p [v, vertices_dict[v]]
-      end
-    end
+    each_vertex {|v| p [v, vertices_dict[v]]} if DEBUG
   end
 
   private
-  def dfs_visit(u, after = nil)
+  def dfs_visit(u, t_value = nil, after = nil)
 
     u_it = vertices_dict[u]
     u_it.color = :Gray
@@ -170,13 +140,15 @@ class Graph
       @cyclic = true if v_it.color == :Gray
       if v_it.color == :White
         v_it.pred = u
-        dfs_visit(v, after)
+
+        return if t_value and v == t_value
+        dfs_visit(v, t_value, after)
       end
     end
     u_it.color = :Black
     u_it.finished = @time += 1
 
-    after && after[u]
+    after and after[u]
   end
 
   public
