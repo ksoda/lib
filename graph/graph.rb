@@ -1,6 +1,7 @@
 #!/usr/bin/env ruby
 # encoding: UTF-8
 DEBUG = nil
+NoPathError = Class.new(RuntimeError)
 
 class Fixnum
   def to_key() self; end
@@ -48,14 +49,14 @@ class Graph
     str.chop
   end
 
-  def make_path(s, v, path = [])
+  def show_path(s, v, path = [])
     if v == s
-      path << s
+      path.unshift s
     elsif vertices_dict[v].pred.nil?
-      raise 'no-path'
+      raise NoPathError
     else
-      make_path(s, vertices_dict[v].pred, path)
-      path << v
+      path.unshift v
+      show_path(s, vertices_dict[v].pred, path)
     end
   end
 
@@ -109,6 +110,7 @@ class Graph
     res
   end
 
+  def find_path(s, t) depth_first_search([s], t); end
   def depth_first_search(vtx_ord = nil, t_value = nil, after = nil)
     each_vertex do |v|
       v_it = vertices_dict[v]
@@ -119,10 +121,8 @@ class Graph
 
     vtx_ord ||= adjacencies.keys
     dfs_visit(vtx_ord.shift, after)
-    unless t_value
     vtx_ord.each do |v|
       dfs_visit(v, t_value, after) if vertices_dict[v].color == :White
-    end
     end
 
     each_vertex {|v| p [v, vertices_dict[v]]} if DEBUG
