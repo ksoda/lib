@@ -4,10 +4,10 @@ DEBUG = nil
 NoPathError = Class.new(RuntimeError)
 
 class Fixnum
-  def to_key() self; end
+  def to_key() self end
 end
 class String
-  def to_key() to_sym; end
+  def to_key() to_sym end
 end
 
 class Graph
@@ -36,7 +36,7 @@ class Graph
   end # initialize
 
   class VertexItem
-    def inspect() "<#{color}:#{pred}:#{discovered}/#{finished}:#{dist}>"; end
+    def inspect() "<#{color}:#{pred}:#{discovered}/#{finished}:#{dist}>" end
   end
 
   def to_s
@@ -74,7 +74,7 @@ class Graph
     end
   end
 
-  def add_vertex(v) adjacencies[v]; end
+  def add_vertex(v) adjacencies[v] end
 
   def add_edge(u, v)
     add_vertex(v)
@@ -110,7 +110,7 @@ class Graph
     res
   end
 
-  def find_path(s, t) depth_first_search([s], t); end
+  def find_path(s, t) depth_first_search([s], t) end
   def depth_first_search(vtx_ord = nil, t_value = nil, after = nil)
     each_vertex do |v|
       v_it = vertices_dict[v]
@@ -199,7 +199,7 @@ class Graph
   end
 
   # Incomplete
-  def bipartite
+  def bipartite # single component
     # unless odd cycle exist
     breadth_first_search
     vertices_dict.partition{|v, v_it| v_it.dist.even?}.
@@ -223,7 +223,6 @@ class Graph
     end
   end
   def bellman_ford(s, &w)
-    init_single_source(s)
   end
 
 end # class Graph
