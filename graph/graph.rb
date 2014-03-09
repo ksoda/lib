@@ -1,13 +1,18 @@
 #!/usr/bin/env ruby
 # encoding: UTF-8
+
+require 'pp'
+
 DEBUG = nil
 NoPathError = Class.new(RuntimeError)
 
-class Fixnum
-  def to_key() self end
-end
-class String
-  def to_key() to_sym end
+class Object
+  def to_key
+    case self
+    when Fixnum then self
+    when String then to_sym
+    else raise 'Not Implemented' end
+  end
 end
 
 class Graph
@@ -19,7 +24,7 @@ class Graph
 
   public
   def initialize(adjs = [], options = {})
-    default = { directed: true, klass: Array, adj_mtxoid: false}
+    default = { directed: true, klass: Array, adj_mtxoid: false }
     options = default.merge options
 
     @adj_matrix = options[:adj_mtxoid]
@@ -39,7 +44,7 @@ class Graph
     def inspect() "<#{color}:#{pred}:#{discovered}/#{finished}:#{dist}>" end
   end
 
-  def to_s
+  def inspect
     str = ''
     each_vertex do |v|
       adj = @adj_matrix ? flg_to_neighbours(adjacencies[v]):
@@ -47,17 +52,6 @@ class Graph
       str += "#{v}->#{adj} "
     end
     str.chop
-  end
-
-  def show_path(s, v, path = [])
-    if v == s
-      path.unshift s
-    elsif vertices_dict[v].pred.nil?
-      raise NoPathError
-    else
-      path.unshift v
-      show_path(s, vertices_dict[v].pred, path)
-    end
   end
 
   def each_vertex
@@ -70,7 +64,7 @@ class Graph
   def each_edge
     adjacencies.each_pair do |u, adj|
       adj = flg_to_neighbours(adj) if @adj_matrix
-      adj.each { |v| yield u, v }
+      adj.each { |v| yield [u, v] }
     end
   end
 
@@ -110,7 +104,21 @@ class Graph
     res
   end
 
-  def find_path(s, t) depth_first_search([s], t) end
+  def make_path(s, v, path = [])
+    if v == s
+      path.unshift s
+    elsif vertices_dict[v].pred.nil?
+      raise NoPathError
+    else
+      make_path(s, vertices_dict[v].pred, path.unshift(v))
+    end
+  end
+
+  def find_path(s, t)
+    depth_first_search([s], t)
+    make_path(s, t)
+  end
+
   def depth_first_search(vtx_ord = nil, t_value = nil, after = nil)
     each_vertex do |v|
       v_it = vertices_dict[v]
@@ -158,7 +166,7 @@ class Graph
     depth_first_search
     return false if @cyclic and scc.nil?
     vertices_dict.map{|v, v_it| [v, v_it.finished]}.sort_by{|v_it, v|
-      -v}.map(&:first) # 黒になったときlistの頭に加えたほうがよい
+      -v}.map(&:first) # vertex can be unshifted to result at processed time
   end
 
   def s_connnected_component
@@ -198,14 +206,6 @@ class Graph
     end
   end
 
-  # Incomplete
-  def bipartite # single component
-    # unless odd cycle exist
-    breadth_first_search
-    vertices_dict.partition{|v, v_it| v_it.dist.even?}.
-      map{|bl| bl.map(&:first)}
-  end
-
   def init_single_source(s)
     each_vertex do |v|
       v_it = vertices_dict[v]
@@ -226,3 +226,76 @@ class Graph
   end
 
 end # class Graph
+
+
+class Network < Graph
+  EdgeItem = Struct.new(:flow, :capacity, :residual)
+  class EdgeItem
+    def inspect() "#{flow}/#{capacity}(#{residual})" end
+  end
+  attr_accessor :edges_dict
+
+  def initialize(edges = [])
+    super()
+    @edges_dict = Hash.new{|h, k| h[k] = EdgeItem.new(0) }
+    edges.each do |edge|
+      cap = edge.pop
+      edges_dict[edge].capacity = cap
+      add_edge(*edge)
+    end
+  end
+
+  def residual_graph # inefficient, update all edges besides aug path edges
+    res_g = Graph.new
+    dnw = to_undirected
+    dnw.directed = true
+
+    dnw.each_edge do |e|
+      flow = case @edges_dict[e].capacity
+             when nil then 0
+             when 0   then -@edges_dict[e.reverse].flow # not member of E
+             else @edges_dict[e].flow end
+      res_cap = @edges_dict[e].capacity - flow
+
+      unless res_cap.zero?
+        raise 'negative residual capacity' if res_cap < 0
+        res_g.add_edge(*e)
+        edges_dict[e].residual = res_cap
+      end
+    end
+    res_g
+  end
+
+  def ford_fulkerson(s = :s, t = :t)
+    each_edge {|edge| edges_dict[edge.reverse].capacity = 0}
+    begin
+      loop do
+        res_g = residual_graph
+        #pp [nw, res_g]
+
+        path = res_g.find_path(:s, :t)
+        res_cap_path = path.each_cons(2).map{|e| edges_dict[e].residual}.min
+        #puts "aug #{path} with #{res_cap_path}"
+
+        path.each_cons(2) do |e|
+          edges_dict[e].flow += res_cap_path
+        end
+      end
+    rescue NoPathError
+      edges_dict.each_pair.with_object([]){|(k, v), m|
+        m << v.flow if k.first == s}.inject(:+)
+    end
+  end
+
+  def inspect
+    str = ''
+    each_vertex do |v|
+      adj = adjacencies[v]
+      adj = adj.map{|elm| it = @edges_dict[[v, elm]]
+        "#{elm}(#{it.flow}/#{it.capacity})" }.join(',')
+      str += "#{v}->#{adj} "
+    end
+    str.chop
+  end
+
+end # Network
