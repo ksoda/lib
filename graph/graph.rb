@@ -244,7 +244,7 @@ class Network < Graph
       add_edge(*edge)
     end
   end
-
+=begin
   def residual_graph # inefficient, update all edges besides aug path edges
     res_g = Graph.new
     dnw = to_undirected
@@ -265,6 +265,7 @@ class Network < Graph
     end
     res_g
   end
+=end
 
   def ford_fulkerson(s = :s, t = :t)
     each_edge {|edge| edges_dict[edge.reverse].capacity = 0}
@@ -273,7 +274,7 @@ class Network < Graph
         res_g = residual_graph
         #pp [nw, res_g]
 
-        path = res_g.find_path(:s, :t)
+        path = res_g.find_path(s, t)
         res_cap_path = path.each_cons(2).map{|e| edges_dict[e].residual}.min
         #puts "aug #{path} with #{res_cap_path}"
 
