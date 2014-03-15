@@ -4,7 +4,7 @@ require 'pp'
 require File.expand_path('../graph.rb', __FILE__)
 
 class Network < Graph
-  DEBUG = true
+  DEBUG = nil
   EdgeItem = Struct.new(:flow, :capacity, :residual)
   class EdgeItem
     def inspect() "#{flow}/#{capacity}(#{residual})" end
@@ -62,19 +62,18 @@ class Network < Graph
     begin
       loop do
         res_g = residual_graph
-        p self if DEBUG
+        each_vertex{|v| raise "violation #{v}" unless flow_conservation?(v)}
+        each_edge{|e| raise "violation #{e}" unless capacity_constraint?(e)}
+        p [self, res_g] if DEBUG
 
         path = res_g.find_path(s, t)
+
         res_cap_path = path.each_cons(2).map{|e| edges_dict[e].residual}.min
         puts "aug #{path} with #{res_cap_path}" if DEBUG
-
         path.each_cons(2) do |e|
           if back_edge?(e) then edges_dict[e.reverse].flow -= res_cap_path
           else edges_dict[e].flow += res_cap_path end
         end
-        each_vertex{|v| raise "violation #{v}" unless flow_conservation?(v)}
-        residual_graph # update
-        each_edge{|e| raise "violation #{e}" unless capacity_constraint?(e)}
       end
     rescue NoPathError
       edges_dict.each_pair.with_object([]){|(e, v), m|
