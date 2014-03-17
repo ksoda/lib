@@ -69,24 +69,28 @@ class Graph
 
   def add_vertex(v) adjacencies[v] end
 
-  def add_edge(u, v)
-    add_vertex(v)
-    unless @adj_matrix
-      adjacencies[u] << v
-      adjacencies[v] << u unless @directed
-    else
-      adjacencies[u][v] = 1
-      adjacencies[v][u] = 1 unless @directed
-    end
+  def add_edge(v1, v2)
+    add_e = proc{|u, v|
+      add_vertex(v)
+      unless @adj_matrix
+        adjacencies[u] << v
+      else
+        adjacencies[u][v] = 1
+      end
+    }
+    add_e[v1, v2]
+    add_e[v2, v1] unless @directed
   end
-  def delete_edge(u, v)
-    unless @adj_matrix
-      adjacencies[u].delete(v)
-      adjacencies[v].delete(u) unless @directed
-    else
-      adjacencies[u][v] = 0
-      adjacencies[v][u] = 0 unless @directed
-    end
+  def delete_edge(v1, v2)
+    del_e = proc{|u, v|
+      unless @adj_matrix
+        adjacencies[u].delete(v)
+      else
+        adjacencies[u][v] = 0
+      end
+    }
+    del_e[v1, v2]
+    del_e[v2, v1] unless @directed
   end
 
   def transpose
@@ -118,7 +122,7 @@ class Graph
     make_path(s, t)
   end
 
-  def depth_first_search(vtx_ord = nil, t_value = nil, after = nil)
+  def depth_first_search(vtx_ord = nil, target = nil, after = nil)
     each_vertex do |v|
       v_it = vertices_dict[v]
       v_it.discovered = v_it.finished = v_it.pred = nil
@@ -129,15 +133,14 @@ class Graph
     vtx_ord ||= adjacencies.keys
     dfs_visit(vtx_ord.shift, after)
     vtx_ord.each do |v|
-      dfs_visit(v, t_value, after) if vertices_dict[v].color == :white
+      dfs_visit(v, target, after) if vertices_dict[v].color == :white
     end
 
     each_vertex {|v| p [v, vertices_dict[v]]} if DEBUG
   end
 
   private
-  def dfs_visit(u, t_value = nil, after = nil)
-
+  def dfs_visit(u, target = nil, after = nil)
     u_it = vertices_dict[u]
     u_it.color = :gray
     u_it.discovered = @time += 1
@@ -148,8 +151,8 @@ class Graph
       if v_it.color == :white
         v_it.pred = u
 
-        return if t_value and v == t_value
-        dfs_visit(v, t_value, after)
+        return if target and v == target
+        dfs_visit(v, target, after)
       end
     end
     u_it.color = :black
