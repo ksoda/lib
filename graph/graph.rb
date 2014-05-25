@@ -171,7 +171,7 @@ class Graph
       -v}.map(&:first) # vertex can be unshifted to result at processed time
   end
 
-  def s_connnected_component
+  def strongly_connected_components
     v_ord = top_sort(true)
     tg = transpose
     tg.depth_first_search(v_ord)
